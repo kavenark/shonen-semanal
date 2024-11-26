@@ -1,55 +1,28 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronUp, ChevronDown, Upload, X, LinkIcon, Plus, Trash2, Calculator } from 'lucide-react';
+import { ChevronUp, ChevronDown, Upload, X, Link, Plus, Trash2, Calculator } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Inter, Bangers } from 'next/font/google';
 import { CountdownTimer } from '@/components/ui/countdown-timer';
+import ConfettiGenerator from 'confetti-js';
 
 const inter = Inter({ subsets: ['latin'] });
 const bangers = Bangers({ weight: '400', subsets: ['latin'] });
 
-interface ConfettiGenerator {
-  render: () => void;
-  clear: () => void;
-}
-
 declare global {
   interface Window {
-    confetti: ConfettiGenerator;
+    confetti: any;
   }
 }
 
-interface TierItem {
-  id: number;
-  imageUrl: string;
-  name: string;
-  originalSection: number;
-}
-
-interface Tier {
-  id: number;
-  name: string;
-  color: string;
-}
-
-interface Section {
-  id: number;
-  name: string;
-  color: string;
-  items: TierItem[];
-  icon: string;
-  averageScore: number;
-}
-
-const TierList: React.FC = () => {
+const TierList = () => {
   const colorOptions = [
     { value: '#FF6666' },
     { value: '#FFD280' },
@@ -73,7 +46,7 @@ const TierList: React.FC = () => {
     { value: '#8B0000' },
   ];
 
-  const [tiers, setTiers] = useState<Tier[]>([
+  const [tiers, setTiers] = useState([
     { id: 10, name: '10', color: colorOptions[0].value },
     { id: 9, name: '9', color: colorOptions[1].value },
     { id: 8, name: '8', color: colorOptions[2].value },
@@ -86,7 +59,7 @@ const TierList: React.FC = () => {
     { id: 1, name: '1', color: colorOptions[9].value },
   ]);
 
-  const [sections, setSections] = useState<Section[]>([
+  const [sections, setSections] = useState([
     {
       id: 1,
       name: 'Azulitos',
@@ -105,25 +78,24 @@ const TierList: React.FC = () => {
     }
   ]);
 
-  const [pendingSection, setPendingSection] = useState<Section>({
+  const [pendingSection, setPendingSection] = useState({
     id: 3,
     name: 'No hay esta semana',
     color: '#4A4A4A',
-    items: [],
-    icon: '',
-    averageScore: 0
+    items: []
   });
 
-  const [draggedItem, setDraggedItem] = useState<TierItem | null>(null);
-  const [tierItems, setTierItems] = useState<{ [key: number]: TierItem[] }>({});
-  const [editingTier, setEditingTier] = useState<number | null>(null);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [tierItems, setTierItems] = useState({});
+  const [editingTier, setEditingTier] = useState(null);
   const [imageUrl, setImageUrl] = useState('');
   const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
-  const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
+  const [activeSectionId, setActiveSectionId] = useState(null);
+  const [calculatedSections, setCalculatedSections] = useState<number[]>([]);
   const [winningSection, setWinningSection] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [audio] = useState<HTMLAudioElement | null>(typeof Audio !== 'undefined' ? new Audio('/winner-sound.mp3') : null);
+  const [audio] = useState(typeof Audio !== 'undefined' ? new Audio('/winner-sound.mp3') : null);
   const [isTie, setIsTie] = useState(false);
   const [tiedSections, setTiedSections] = useState<number[]>([]);
 
@@ -133,7 +105,7 @@ const TierList: React.FC = () => {
       const { savedTiers, savedSections, savedPendingSection, savedTierItems } = JSON.parse(savedData);
       setTiers(savedTiers);
       setSections(prev => prev.map(section => {
-        const savedSection = savedSections.find((s: Section) => s.id === section.id);
+        const savedSection = savedSections.find(s => s.id === section.id);
         return savedSection ? { ...savedSection, icon: section.icon } : section;
       }));
       setPendingSection(savedPendingSection);
@@ -150,7 +122,7 @@ const TierList: React.FC = () => {
     }));
   }, [tiers, sections, pendingSection, tierItems]);
 
-  const calculateAverageScore = (sectionId: number) => {
+  const calculateAverageScore = (sectionId) => {
     let totalScore = 0;
     let itemCount = 0;
 
@@ -160,18 +132,17 @@ const TierList: React.FC = () => {
       itemCount += itemsFromSection.length;
     });
 
-    return itemCount > 0 ? (totalScore / itemCount).toFixed(2) : '0';
+    return itemCount > 0 ? (totalScore / itemCount).toFixed(2) : 0;
   };
 
-  const handleFileSelect = (sectionId: number) => {
+  const handleFileSelect = (sectionId) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     input.multiple = true;
     
-    input.onchange = (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const files = Array.from(target.files || []);
+    input.onchange = (e) => {
+      const files = Array.from(e.target.files);
       
       const newImages = files.map(file => ({
         id: Date.now() + Math.random(),
@@ -194,7 +165,7 @@ const TierList: React.FC = () => {
     input.click();
   };
 
-  const handleAddImageByUrl = (sectionId: number) => {
+  const handleAddImageByUrl = (sectionId) => {
     if (imageUrl) {
       const newImage = {
         id: Date.now() + Math.random(),
@@ -218,7 +189,7 @@ const TierList: React.FC = () => {
     }
   };
 
-  const handleRemoveImage = (sectionId: number, itemId: number) => {
+  const handleRemoveImage = (sectionId, itemId) => {
     setSections(prev => prev.map(section => {
       if (section.id === sectionId) {
         return {
@@ -230,8 +201,8 @@ const TierList: React.FC = () => {
     }));
   };
 
-  const handleDragStart = (item: TierItem, sectionId: number) => {
-    setDraggedItem({ ...item, originalSection: sectionId });
+  const handleDragStart = (item, sectionId) => {
+    setDraggedItem({ ...item, sourceSectionId: sectionId });
   };
 
   const handleDrag = (e: React.DragEvent<HTMLImageElement>) => {
@@ -249,18 +220,18 @@ const TierList: React.FC = () => {
     e.preventDefault();
   };
 
-  const handleDrop = (tierId: number) => {
+  const handleDrop = (tierId) => {
     if (!draggedItem) return;
 
-    if (draggedItem.originalSection) {
-      if (draggedItem.originalSection === pendingSection.id) {
+    if (draggedItem.sourceSectionId) {
+      if (draggedItem.sourceSectionId === pendingSection.id) {
         setPendingSection(prev => ({
           ...prev,
           items: prev.items.filter(item => item.id !== draggedItem.id)
         }));
       } else {
         setSections(prev => prev.map(section => {
-          if (section.id === draggedItem.originalSection) {
+          if (section.id === draggedItem.sourceSectionId) {
             return {
               ...section,
               items: section.items.filter(item => item.id !== draggedItem.id)
@@ -274,7 +245,7 @@ const TierList: React.FC = () => {
     setTierItems(prev => {
       const newTierItems = { ...prev };
       Object.keys(newTierItems).forEach(key => {
-        newTierItems[parseInt(key)] = newTierItems[parseInt(key)]?.filter(item => 
+        newTierItems[key] = newTierItems[key]?.filter(item => 
           item.id !== draggedItem.id
         ) || [];
       });
@@ -290,29 +261,29 @@ const TierList: React.FC = () => {
     setDraggedItem(null);
   };
 
-  const handleDropToSection = (e: React.DragEvent, targetSectionId: number, isPending = false) => {
+  const handleDropToSection = (e, targetSectionId, isPending = false) => {
     e.preventDefault();
     if (!draggedItem) return;
 
     setTierItems(prev => {
       const newTierItems = { ...prev };
       Object.keys(newTierItems).forEach(key => {
-        newTierItems[parseInt(key)] = newTierItems[parseInt(key)]?.filter(item => 
+        newTierItems[key] = newTierItems[key]?.filter(item => 
           item.id !== draggedItem.id
         ) || [];
       });
       return newTierItems;
     });
 
-    if (draggedItem.originalSection) {
-      if (draggedItem.originalSection === pendingSection.id) {
+    if (draggedItem.sourceSectionId) {
+      if (draggedItem.sourceSectionId === pendingSection.id) {
         setPendingSection(prev => ({
           ...prev,
           items: prev.items.filter(item => item.id !== draggedItem.id)
         }));
       } else {
         setSections(prev => prev.map(section => {
-          if (section.id === draggedItem.originalSection) {
+          if (section.id === draggedItem.sourceSectionId) {
             return {
               ...section,
               items: section.items.filter(item => item.id !== draggedItem.id)
@@ -343,7 +314,7 @@ const TierList: React.FC = () => {
     setDraggedItem(null);
   };
 
-  const addNewTier = (position: 'top' | 'bottom') => {
+  const addNewTier = (position) => {
     const newId = position === 'top' ? Math.max(...tiers.map(t => t.id)) + 1 : Math.min(...tiers.map(t => t.id)) - 1;
     const newTier = {
       id: newId,
@@ -353,27 +324,27 @@ const TierList: React.FC = () => {
     setTiers(prev => position === 'top' ? [newTier, ...prev] : [...prev, newTier]);
   };
 
-  const removeTier = (tierId: number) => {
+  const removeTier = (tierId) => {
     setTiers(prev => prev.filter(tier => tier.id !== tierId));
     setTierItems(prev => {
-      const { [tierId]: _, ...rest } = prev;
+      const { [tierId]: removedTier, ...rest } = prev;
       return rest;
     });
   };
 
-  const updateTier = (tierId: number, updates: Partial<Tier>) => {
+  const updateTier = (tierId, updates) => {
     setTiers(prev => prev.map(tier => 
       tier.id === tierId ? { ...tier, ...updates } : tier
     ));
     setEditingTier(null);
   };
 
-  const handleTierEdit = (e: React.MouseEvent, tierId: number) => {
+  const handleTierEdit = (e, tierId) => {
     e.stopPropagation();
     setEditingTier(tierId);
     
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!event.target || (!(event.target as Element).closest('.tier-edit') && !(event.target as Element).closest('.color-option'))) {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.tier-edit') && !event.target.closest('.color-option')) {
         updateTier(tierId, {});
         document.removeEventListener('mousedown', handleClickOutside);
       }
@@ -384,25 +355,24 @@ const TierList: React.FC = () => {
     }, 0);
   };
 
-  const handleTierNameChange = (e: React.ChangeEvent<HTMLInputElement>, tierId: number) => {
+  const handleTierNameChange = (e, tierId) => {
     const newName = e.target.value;
     setTiers(prev => prev.map(tier => 
       tier.id === tierId ? { ...tier, name: newName } : tier
     ));
   };
 
-  const handleTierColorChange = (color: string, tierId: number) => {
+  const handleTierColorChange = (color, tierId) => {
     updateTier(tierId, { color: color });
   };
 
-  const handleTierEditKeyDown = (e: React.KeyboardEvent, tierId: number) => {
+  const handleTierEditKeyDown = (e, tierId) => {
     if (e.key === 'Enter') {
       updateTier(tierId, {});
     }
   };
 
-  const reset
-TierList = () => {
+  const resetTierList = () => {
     const allItems = [...Object.values(tierItems).flat(), ...pendingSection.items];
     
     const updatedSections = sections.map(section => ({
@@ -428,30 +398,28 @@ TierList = () => {
       sections.forEach(section => {
         const newScore = calculateAverageScore(section.id);
         setSections(prev => prev.map(s => 
-          s.id === section.id ? { ...s, averageScore: parseFloat(newScore) } : s
+          s.id === section.id ? { ...s, averageScore: newScore } : s
         ));
       });
     }, 0);
   };
 
   const startConfetti = (iconUrls: string[]) => {
-    if (typeof window !== 'undefined' && window.confetti) {
-      const confettiSettings = { 
-        target: 'confetti-canvas', 
-        max: 150, 
-        size: 2, 
-        animate: true, 
-        props: ['circle', ...iconUrls.map(url => ({ type: 'svg', src: url, size: 15, weight: 1 }))], 
-        rotate: true,
-        spread: 180
-      };
-      window.confetti = new (window as any).ConfettiGenerator(confettiSettings);
-      window.confetti.render();
-    }
-  };
+     const confettiSettings = { 
+       target: 'confetti-canvas', 
+       max: 150, 
+       size: 2, 
+       animate: true, 
+       props: ['circle', ...iconUrls.map(url => ({ type: 'svg', src: url, size: 15, weight: 1 }))], 
+       rotate: true,
+       spread: 180
+     };
+     window.confetti = new ConfettiGenerator(confettiSettings);
+     window.confetti.render();
+   };
 
   const stopConfetti = () => {
-    if (typeof window !== 'undefined' && window.confetti) {
+    if (window.confetti) {
       window.confetti.clear();
     }
   };
@@ -464,17 +432,17 @@ TierList = () => {
 
     if (audio) {
       audio.currentTime = 0;
-      audio.play().catch(error => console.error('Error playing audio:', error));
+      audio.play();
     }
 
     setTimeout(() => {
       const newSections = sections.map(section => ({
         ...section,
-        averageScore: parseFloat(calculateAverageScore(section.id))
+        averageScore: calculateAverageScore(section.id)
       }));
 
-      const maxScore = Math.max(...newSections.map(s => s.averageScore));
-      const winningSections = newSections.filter(s => s.averageScore === maxScore);
+      const maxScore = Math.max(...newSections.map(s => parseFloat(s.averageScore)));
+      const winningSections = newSections.filter(s => parseFloat(s.averageScore) === maxScore);
 
       setSections(newSections);
 
@@ -482,7 +450,7 @@ TierList = () => {
         setIsTie(true);
         setTiedSections(winningSections.map(s => s.id));
         startConfetti(winningSections.map(s => s.icon));
-      } else if (winningSections.length === 1) {
+      } else {
         setWinningSection(winningSections[0].id);
         startConfetti([winningSections[0].icon]);
       }
@@ -551,18 +519,16 @@ TierList = () => {
                   {tiedSections.map(id => sections.find(s => s.id === id)?.name).join(' y ')}
                 </p>
                 <p className="text-7xl font-bold text-yellow-300 animate-pulse" style={{ textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000' }}>
-                  {sections.find(s => s.id === tiedSections[0])?.averageScore.toFixed(2)}
+                  {sections.find(s => s.id === tiedSections[0])?.averageScore}
                 </p>
               </div>
               <div className="mt-8 flex justify-center space-x-4">
                 {tiedSections.map(id => (
-                  <Image
+                  <img
                     key={id}
-                    src={sections.find(s => s.id === id)?.icon || ''}
+                    src={sections.find(s => s.id === id)?.icon}
                     alt={`${sections.find(s => s.id === id)?.name} icon`}
-                    width={128}
-                    height={128}
-                    className="object-contain animate-bounce"
+                    className="w-32 h-32 object-contain animate-bounce"
                     style={{ animation: 'bounce 2s infinite' }}
                   />
                 ))}
@@ -583,16 +549,14 @@ TierList = () => {
                   {sections.find(s => s.id === winningSection)?.name}
                 </p>
                 <p className="text-7xl font-bold text-yellow-300 animate-pulse" style={{ textShadow: '4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000' }}>
-                  {sections.find(s => s.id === winningSection)?.averageScore.toFixed(2)}
+                  {sections.find(s => s.id === winningSection)?.averageScore}
                 </p>
               </div>
               <div className="mt-8 flex justify-center">
-                <Image
-                  src={sections.find(s => s.id === winningSection)?.icon || ''}
+                <img
+                  src={sections.find(s => s.id === winningSection)?.icon}
                   alt="Winner icon"
-                  width={128}
-                  height={128}
-                  className="object-contain animate-spin"
+                  className="w-32 h-32 object-contain animate-spin"
                   style={{ animation: 'spin 5s linear infinite' }}
                 />
               </div>
@@ -663,14 +627,12 @@ TierList = () => {
                   <div className="flex flex-wrap gap-2">
                     {tierItems[tier.id]?.map((item, index) => (
                       <div key={`${item.id}-${index}`} className="relative group">
-                        <Image
+                        <img
                           src={item.imageUrl}
                           alt={item.name}
-                          width={64}
-                          height={96}
-                          className="object-cover cursor-move rounded-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:z-10 hover:shadow-lg"
+                          className="w-16 h-24 object-cover cursor-move rounded-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:z-10 hover:shadow-lg"
                           draggable
-                          onDragStart={() => handleDragStart(item, tier.id)}
+                          onDragStart={() => handleDragStart(item)}
                           onDrag={handleDrag}
                         />
                       </div>
@@ -716,7 +678,7 @@ TierList = () => {
                   <h2 className={`text-xl font-bold text-white text-center flex-1 flex items-center justify-center gap-2 ${bangers.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                     {section.icon && (
                       <>
-                        <Image
+                        <img
                           src={section.icon}
                           alt={`${section.name} icon`}
                           width={24}
@@ -724,7 +686,7 @@ TierList = () => {
                           className="object-contain"
                         />
                         {section.name}
-                        <Image
+                        <img
                           src={section.icon}
                           alt={`${section.name} icon`}
                           width={24}
@@ -738,12 +700,6 @@ TierList = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 w-10">
-                        
-</ReactProject>
-
-<ReactProject id="Shonen-Semanal">
-
-```tsx file="components/ui/TierList.tsx"
                         <Plus size={16} />
                       </Button>
                     </DropdownMenuTrigger>
@@ -756,7 +712,7 @@ TierList = () => {
                         setActiveSectionId(section.id);
                         setIsUrlDialogOpen(true);
                       }}>
-                        <LinkIcon className="mr-2 h-4 w-4" />
+                        <Link className="mr-2 h-4 w-4" />
                         <span>Agregar por URL</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -766,12 +722,10 @@ TierList = () => {
                 <div className="flex flex-wrap gap-2 justify-center">
                   {section.items.map((item, index) => (
                     <div key={`${item.id}-${index}`} className="relative group">
-                      <Image
+                      <img
                         src={item.imageUrl}
                         alt={item.name}
-                        width={64}
-                        height={96}
-                        className="object-cover cursor-move rounded-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:z-10 hover:shadow-lg"
+                        className="w-16 h-24 object-cover cursor-move rounded-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:z-10 hover:shadow-lg"
                         draggable
                         onDragStart={() => handleDragStart(item, section.id)}
                         onDrag={handleDrag}
@@ -785,31 +739,29 @@ TierList = () => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 text-center">
-                  <span className="font-bold text-white">Promedio: {section.averageScore.toFixed(2)}</span>
+                <div className="mt-4 flex justify-between items-center">
+                  <span className="text-white font-bold">
+                    Promedio: {section.averageScore}
+                  </span>
                 </div>
               </Card>
             ))}
-
-            {/* Pending Section */}
+            
             <Card 
-              className="p-4 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
-              style={{ backgroundColor: pendingSection.color }}
+              className="p-4 bg-gray-700 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
               onDragOver={handleDragOver}
-              onDrop={(e) => handleDropToSection(e, pendingSection.id, true)}
+              onDrop={(e) => handleDropToSection(e, null, true)}
             >
-              <h2 className={`text-xl font-bold text-white mb-4 text-center ${bangers.className}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                {pendingSection.name}
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className={`text-xl font-bold text-white text-center w-full ${bangers.className}`}>No hay esta semana</h2>
+              </div>
               <div className="flex flex-wrap gap-2 justify-center">
                 {pendingSection.items.map((item, index) => (
                   <div key={`${item.id}-${index}`} className="relative group">
-                    <Image
+                    <img
                       src={item.imageUrl}
                       alt={item.name}
-                      width={64}
-                      height={96}
-                      className="object-cover cursor-move rounded-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:z-10 hover:shadow-lg"
+                      className="w-16 h-24 object-cover cursor-move rounded-md transition-all duration-300 ease-in-out transform hover:scale-105 hover:z-10 hover:shadow-lg"
                       draggable
                       onDragStart={() => handleDragStart(item, pendingSection.id)}
                       onDrag={handleDrag}
@@ -826,7 +778,6 @@ TierList = () => {
             </Card>
           </div>
         </div>
-
         <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -834,14 +785,13 @@ TierList = () => {
             </DialogHeader>
             <Input
               type="url"
-              placeholder="https://example.com/image.jpg"
+              placeholder="https://ejemplo.com/imagen.jpg"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
             />
-            <Button onClick={() => handleAddImageByUrl(activeSectionId || 0)}>Agregar</Button>
+            <Button onClick={() => handleAddImageByUrl(activeSectionId)}>Agregar</Button>
           </DialogContent>
         </Dialog>
-
         <canvas id="confetti-canvas" className="fixed inset-0 pointer-events-none z-50"></canvas>
       </TooltipProvider>
     </div>
