@@ -16,3 +16,6 @@ Una aplicación web tipo tier list para calificar y comparar mangas semanalmente
 - React
 - Tailwind CSS
 - Shadcn/ui
+
+# shonen-semanal
+Tierlist para el Shonen Semanal
