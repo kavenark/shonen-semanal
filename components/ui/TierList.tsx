@@ -819,6 +819,5 @@ const TierList: React.FC = () => {
   );
 };
 
-
 export default TierList;
 
