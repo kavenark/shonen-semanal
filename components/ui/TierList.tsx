@@ -732,7 +732,7 @@ const TierList: React.FC = () => {
                         setActiveSectionId(section.id);
                         setIsUrlDialogOpen(true);
                       }}>
-                        <LinkIcon className="mr-2 h-4 w-4"<LinkIcon className="mr-2 h-4 w-4" />
+                        <LinkIcon className="mr-2 h-4 w-4" />
                         <span>Agregar por URL</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
