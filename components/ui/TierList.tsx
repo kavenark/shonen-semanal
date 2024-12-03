@@ -239,7 +239,7 @@ const TierList: React.FC = () => {
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
@@ -282,7 +282,7 @@ const TierList: React.FC = () => {
     setDraggedItem(null);
   };
 
-  const handleDropToSection = (e: React.DragEvent, targetSectionId: number | null, isPending = false) => {
+  const handleDropToSection = (e: React.DragEvent<HTMLDivElement>, targetSectionId: number | null, isPending = false) => {
     e.preventDefault();
     if (!draggedItem) return;
 
@@ -803,6 +803,7 @@ const TierList: React.FC = () => {
             <DialogHeader>
               <DialogTitle>Agregar imagen por URL</DialogTitle>
             </DialogHeader>
+<continuation_point>
             <Input
               type="url"
               placeholder="https://ejemplo.com/imagen.jpg"
