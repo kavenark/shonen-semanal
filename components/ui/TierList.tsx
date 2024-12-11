@@ -804,13 +804,19 @@ const TierList: React.FC = () => {
               <DialogTitle>Agregar imagen por URL</DialogTitle>
             </DialogHeader>
 <continuation_point>
-            <Input
-              type="url"
-              placeholder="https://ejemplo.com/imagen.jpg"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-            />
-            <Button onClick={() => handleAddImageByUrl(activeSectionId!)}>Agregar</Button>
+            <div className="grid gap-4 py-4">
+              <Input
+                type="url"
+                placeholder="https://ejemplo.com/imagen.jpg"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => handleAddImageByUrl(activeSectionId!)}>
+                Agregar
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
         <canvas id="confetti-canvas" className="fixed inset-0 pointer-events-none z-50"></canvas>
