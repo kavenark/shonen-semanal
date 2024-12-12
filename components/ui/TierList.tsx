@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Inter, Bangers } from 'next/font/google';
 import { CountdownTimer } from '@/components/ui/countdown-timer';
 import ConfettiGenerator from 'confetti-js';
+import { useMemoizedCalculations } from './hooks/useMemoizedCalculations';
 
 const inter = Inter({ subsets: ['latin'] });
 const bangers = Bangers({ weight: '400', subsets: ['latin'] });
@@ -122,6 +123,8 @@ const TierList: React.FC = () => {
   const [isTie, setIsTie] = useState(false);
   const [tiedSections, setTiedSections] = useState<number[]>([]);
 
+  const { calculateAverageScore, sectionAverages } = useMemoizedCalculations(sections, tierItems);
+
   useEffect(() => {
     const savedData = localStorage.getItem('tierListData');
     if (savedData) {
@@ -145,18 +148,6 @@ const TierList: React.FC = () => {
     }));
   }, [tiers, sections, pendingSection, tierItems]);
 
-  const calculateAverageScore = (sectionId: number): string => {
-    let totalScore = 0;
-    let itemCount = 0;
-
-    Object.entries(tierItems).forEach(([tierId, items]) => {
-      const itemsFromSection = items.filter(item => item.originalSection === sectionId);
-      totalScore += itemsFromSection.length * parseInt(tierId);
-      itemCount += itemsFromSection.length;
-    });
-
-    return itemCount > 0 ? (totalScore / itemCount).toFixed(2) : '0';
-  };
 
   const handleFileSelect = (sectionId: number) => {
     const input = document.createElement('input');
@@ -456,15 +447,10 @@ const TierList: React.FC = () => {
     }
 
     setTimeout(() => {
-      const newSections = sections.map(section => ({
-        ...section,
-        averageScore: parseFloat(calculateAverageScore(section.id))
-      }));
+      const maxScore = Math.max(...sectionAverages.map(s => s.averageScore));
+      const winningSections = sectionAverages.filter(s => s.averageScore === maxScore);
 
-      const maxScore = Math.max(...newSections.map(s => s.averageScore));
-      const winningSections = newSections.filter(s => s.averageScore === maxScore);
-
-      setSections(newSections);
+      setSections(sectionAverages);
 
       if (winningSections.length > 1) {
         setIsTie(true);
@@ -761,7 +747,7 @@ const TierList: React.FC = () => {
                 </div>
                 <div className="mt-4 flex justify-between items-center">
                   <span className="text-white font-bold">
-                    Promedio: {section.averageScore.toFixed(2)}
+                    Promedio: {sectionAverages.find(s => s.id === section.id)?.averageScore.toFixed(2) || '0.00'}
                   </span>
                 </div>
               </Card>
@@ -803,7 +789,7 @@ const TierList: React.FC = () => {
             <DialogHeader>
               <DialogTitle>Agregar imagen por URL</DialogTitle>
             </DialogHeader>
-<continuation_point>
+
             <div className="grid gap-4 py-4">
               <Input
                 type="url"
